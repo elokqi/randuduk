@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Random Tempat Duduk</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎲 Random Tempat Duduk Siswa</h1>
+
+      <label>Jumlah Baris</label>
+      <input type="number" id="rows" placeholder="Contoh: 3" />
+
+      <label>Jumlah Kolom</label>
+      <input type="number" id="cols" placeholder="Contoh: 4" />
+
+      <label>Daftar Nama Siswa (pisahkan dengan enter)</label>
+      <textarea
+        id="names"
+        rows="6"
+        placeholder="Ani\nBudi\nCitra\nDeni"
+      ></textarea>
+
+      <button onclick="generateSeats()">Acak Tempat Duduk</button>
+      <div id="result"></div>
+    </div>
+
+    <script>
+      let draggedCell = null;
+
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+
+      function generateSeats() {
+        const rows = parseInt(document.getElementById("rows").value);
+        const cols = parseInt(document.getElementById("cols").value);
+        const namesText = document.getElementById("names").value.trim();
+
+        if (!rows || !cols) {
+          alert("Jumlah baris dan kolom wajib diisi");
+          return;
+        }
+
+        let rawNames = namesText ? namesText.split("\n") : [];
+
+        // Pisahkan prioritas & non-prioritas
+        let priority = [];
+        let normal = [];
+
+        rawNames.forEach((name) => {
+          if (name.includes("*")) {
+            priority.push(name.replace("*", "").trim());
+          } else {
+            normal.push(name.trim());
+          }
+        });
+
+        shuffle(priority);
+        shuffle(normal);
+
+        let table = "<table>";
+        let pIndex = 0;
+        let nIndex = 0;
+
+        for (let r = 0; r < rows; r++) {
+          table += "<tr>";
+          for (let c = 0; c < cols; c++) {
+            let content = "KOSONG";
+
+            // Baris depan → isi prioritas dulu
+            if (r === 0 && pIndex < priority.length) {
+              content = priority[pIndex++];
+            }
+            // Baris lain → isi normal
+            else if (nIndex < normal.length) {
+              content = normal[nIndex++];
+            }
+            // Sisa prioritas kalau masih ada
+            else if (pIndex < priority.length) {
+              content = priority[pIndex++];
+            }
+
+            let cls = content === "KOSONG" ? "empty" : "";
+            if (priority.includes(content)) cls += " priority";
+
+            table += `
+        <td class="${cls}"
+            draggable="true"
+            ondragstart="dragStart(event)"
+            ondragover="dragOver(event)"
+            ondragleave="dragLeave(event)"
+            ondrop="drop(event)">
+          ${content}
+        </td>`;
+          }
+          table += "</tr>";
+        }
+
+        table += "</table>";
+        document.getElementById("result").innerHTML = table;
+      }
+
+      /* DRAG & DROP */
+      function dragStart(e) {
+        draggedCell = e.target;
+        e.target.classList.add("dragging");
+      }
+
+      function dragOver(e) {
+        e.preventDefault();
+        e.target.classList.add("drag-over");
+      }
+
+      function dragLeave(e) {
+        e.target.classList.remove("drag-over");
+      }
+
+      function drop(e) {
+        e.preventDefault();
+        const target = e.target;
+
+        if (!draggedCell || target.tagName !== "TD") return;
+
+        const temp = target.innerHTML;
+        target.innerHTML = draggedCell.innerHTML;
+        draggedCell.innerHTML = temp;
+
+        draggedCell.classList.remove("dragging");
+        target.classList.remove("drag-over");
+      }
+
+      document.addEventListener("dragend", () => {
+        document.querySelectorAll("td").forEach((td) => {
+          td.classList.remove("dragging", "drag-over");
+        });
+      });
+    </script>
+  </body>
+</html>
